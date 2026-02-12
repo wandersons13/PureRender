@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PureRender
 // @namespace    https://github.com/wandersons13/PureRender
-// @version      0.2
+// @version      0.3
 // @description  Instant loading by preventing web bloat, forcing content display and neutralizing telemetry.
 // @author       wandersons13
 // @match        *://*/*
@@ -18,14 +18,15 @@
     'use strict';
 
     const currentHost = window.location.hostname;
-    const excluded = GM_getValue('excluded_sites', []);
+    const isExcludedHost = /^(gemini\.google\.com|.*\.youtube\..*|youtube\..*)$/.test(currentHost);
+    const userExcluded = GM_getValue('excluded_sites', []);
 
-    if (excluded.some(site => currentHost.includes(site))) return;
+    if (userExcluded.some(site => currentHost.includes(site))) return;
 
     const noop = () => {};
 
     const killTelemetry = () => {
-        const trackers = [
+const trackers = [
             'ga', 'gaGlobal', 'GoogleAnalyticsObject', 'dataLayer', 'fbq',
             '_gaq', '_gat', 'monitoring', 'newrelic', 'StackExchange',
             'amplitude', 'mixpanel', 'intercom', 'hubspot'
@@ -60,48 +61,47 @@
 
     const nativeOpen = XMLHttpRequest.prototype.open;
     XMLHttpRequest.prototype.open = function(method, url) {
-        if (shouldBlock(url)) {
-            this.send = noop;
-            return;
-        }
+        if (shouldBlock(url)) { this.send = noop; return; }
         return nativeOpen.apply(this, arguments);
     };
 
-    GM_addStyle(`
-        html, body {
-            display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            scroll-behavior: auto !important;
-        }
-        #preloader, .preloader, #loader, .loader, #loading, .loading,
-        [class*="spinner"], [id*="spinner"], .loading-overlay,
-        [class*="preloader-"], [id*="preloader-"],
-        .overlay-fixed, #overlay-fixed, .ytp-spinner {
-            display: none !important;
-            opacity: 0 !important;
-            visibility: hidden !important;
-            pointer-events: none !important;
-        }
-    `);
+    if (!isExcludedHost) {
+        GM_addStyle(`
+            html, body {
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                scroll-behavior: auto !important;
+            }
+            #preloader, .preloader, #loader, .loader, #loading, .loading,
+            [class*="spinner"], [id*="spinner"], .loading-overlay,
+            [class*="preloader-"], [id*="preloader-"],
+            .overlay-fixed, #overlay-fixed {
+                display: none !important;
+                opacity: 0 !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
+            }
+        `);
 
-    const unlock = () => {
-        try {
-            document.body.style.setProperty('overflow', 'auto', 'important');
-            document.body.style.setProperty('position', 'relative', 'important');
-            document.documentElement.style.setProperty('overflow', 'auto', 'important');
-            window.addEventListener('wheel', (e) => e.stopPropagation(), { capture: true });
-            window.addEventListener('touchmove', (e) => e.stopPropagation(), { capture: true });
-        } catch (e) {}
-    };
+        const unlock = () => {
+            try {
+                document.body.style.setProperty('overflow', 'auto', 'important');
+                document.body.style.setProperty('position', 'relative', 'important');
+                document.documentElement.style.setProperty('overflow', 'auto', 'important');
+                window.addEventListener('wheel', (e) => e.stopPropagation(), { capture: true });
+                window.addEventListener('touchmove', (e) => e.stopPropagation(), { capture: true });
+            } catch (e) {}
+        };
 
-    window.addEventListener('load', unlock, { once: true });
-    setTimeout(unlock, 2000);
+        window.addEventListener('load', unlock, { once: true });
+        setTimeout(unlock, 2000);
+    }
 
     GM_registerMenuCommand("🚫 Exclude this site", () => {
-        if (!excluded.includes(currentHost)) {
-            excluded.push(currentHost);
-            GM_setValue('excluded_sites', excluded);
+        if (!userExcluded.includes(currentHost)) {
+            userExcluded.push(currentHost);
+            GM_setValue('excluded_sites', userExcluded);
             location.reload();
         }
     });
