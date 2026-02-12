@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PureRender
 // @namespace    https://github.com/wandersons13/PureRender
-// @version      0.3
+// @version      0.3.1
 // @description  Instant loading by preventing web bloat, forcing content display and neutralizing telemetry.
 // @author       wandersons13
 // @match        *://*/*
@@ -14,7 +14,7 @@
 // @license      GNU
 // ==/UserScript==
 
-(function() {
+(function () {
     'use strict';
 
     const currentHost = window.location.hostname;
@@ -26,12 +26,14 @@
     const noop = () => {};
 
     const killTelemetry = () => {
-const trackers = [
+        const trackers = [
             'ga', 'gaGlobal', 'GoogleAnalyticsObject', 'dataLayer', 'fbq',
             '_gaq', '_gat', 'monitoring', 'newrelic', 'StackExchange',
             'amplitude', 'mixpanel', 'intercom', 'hubspot'
         ];
-        trackers.forEach(t => { if (window[t]) window[t] = undefined; });
+        trackers.forEach(t => {
+            if (window[t]) window[t] = undefined;
+        });
         if (navigator.sendBeacon) navigator.sendBeacon = () => true;
         console.clear = noop;
     };
@@ -60,8 +62,11 @@ const trackers = [
     });
 
     const nativeOpen = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function(method, url) {
-        if (shouldBlock(url)) { this.send = noop; return; }
+    XMLHttpRequest.prototype.open = function (method, url) {
+        if (shouldBlock(url)) {
+            this.send = noop;
+            return;
+        }
         return nativeOpen.apply(this, arguments);
     };
 
@@ -89,12 +94,18 @@ const trackers = [
                 document.body.style.setProperty('overflow', 'auto', 'important');
                 document.body.style.setProperty('position', 'relative', 'important');
                 document.documentElement.style.setProperty('overflow', 'auto', 'important');
-                window.addEventListener('wheel', (e) => e.stopPropagation(), { capture: true });
-                window.addEventListener('touchmove', (e) => e.stopPropagation(), { capture: true });
+                window.addEventListener('wheel', (e) => e.stopPropagation(), {
+                    capture: true
+                });
+                window.addEventListener('touchmove', (e) => e.stopPropagation(), {
+                    capture: true
+                });
             } catch (e) {}
         };
 
-        window.addEventListener('load', unlock, { once: true });
+        window.addEventListener('load', unlock, {
+            once: true
+        });
         setTimeout(unlock, 2000);
     }
 
