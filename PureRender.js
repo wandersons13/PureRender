@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         PureRender
 // @namespace    https://github.com/wandersons13/PureRender
-// @version      0.3.1
-// @description  Instant loading by preventing web bloat, forcing content display and neutralizing telemetry.
+// @version      0.4
+// @description  Instantly load web pages by preventing web bloat, forcing content display, and neutralizing telemetry.
 // @author       wandersons13
 // @match        *://*/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=web.dev
@@ -18,10 +18,12 @@
     'use strict';
 
     const currentHost = window.location.hostname;
-    const isExcludedHost = /^(gemini\.google\.com|.*\.youtube\..*|youtube\..*)$/.test(currentHost);
+    const currentPath = window.location.pathname.toLowerCase();
+    const isDirectMedia = /\.(jpg|jpeg|png|gif|webp|avif|mp4|webm|svg)($|\?)/.test(currentPath);
+    const isExcludedHost = /^(gemini\.google\.com|.*\.youtube\..*|youtube\..*|.*\.mega\..*|mega\..*)$/.test(currentHost);
     const userExcluded = GM_getValue('excluded_sites', []);
 
-    if (userExcluded.some(site => currentHost.includes(site))) return;
+    if (isDirectMedia || isExcludedHost || userExcluded.some(site => currentHost.includes(site))) return;
 
     const noop = () => {};
 
@@ -49,6 +51,8 @@
 
     const shouldBlock = (url) => {
         if (!url || typeof url !== 'string') return false;
+        if (url.startsWith('/') || url.includes(currentHost)) return false;
+
         const lowUrl = url.toLowerCase();
         return blockedKeywords.some(keyword => lowUrl.includes(keyword));
     };
