@@ -1,11 +1,11 @@
 // ==UserScript==
-// @name         PureRender
+// @name         PureRender: Instant-Web
 // @namespace    https://github.com/wandersons13/PureRender
-// @version      0.4
-// @description  Instantly load web pages by preventing web bloat, forcing content display, and neutralizing telemetry.
+// @version      0.5
+// @description  Instantly accelerate websites by blocking trackers, removing render blockers and reducing background CPU usage.
 // @author       wandersons13
 // @match        *://*/*
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=web.dev
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=speedtest.net
 // @run-at       document-start
 // @grant        GM_addStyle
 // @grant        GM_getValue
@@ -15,114 +15,228 @@
 // ==/UserScript==
 
 (function () {
-    'use strict';
+    "use strict";
 
-    const currentHost = window.location.hostname;
-    const currentPath = window.location.pathname.toLowerCase();
-    const isDirectMedia = /\.(jpg|jpeg|png|gif|webp|avif|mp4|webm|svg)($|\?)/.test(currentPath);
-    const isExcludedHost = /^(gemini\.google\.com|.*\.youtube\..*|youtube\..*|.*\.mega\..*|mega\..*)$/.test(currentHost);
-    const userExcluded = GM_getValue('excluded_sites', []);
+    /* -- CONFIG -- */
+    const host = location.hostname;
+    const path = location.pathname.toLowerCase();
 
-    if (isDirectMedia || isExcludedHost || userExcluded.some(site => currentHost.includes(site))) return;
+    const excludedHosts = /^(gemini\.google\.com|.*\.youtube\..*|youtube\..*|.*\.mega\..*|mega\..*)$/;
 
+    const directMedia = /\.(jpg|jpeg|png|gif|webp|avif|mp4|webm|svg)($|\?)/;
+
+    const trackerRegex = /(analytics|doubleclick|tracker|pixel|mixpanel|amplitude|hotjar|sentry|newrelic|segment)/i;
+
+    /* -- USER EXCLUSIONS -- */
+    const userExcluded = GM_getValue("excluded_sites", []);
+
+    const excluded = directMedia.test(path) || excludedHosts.test(host) || userExcluded.some(site => host === site || host.endsWith("." + site));
+
+    if (excluded) return;
+
+    /* -- UTIL -- */
     const noop = () => {};
 
-    const killTelemetry = () => {
+    const isTrackerURL = url => {
+        if (!url || typeof url !== "string") return false;
+
+        const searchKeywords = /(search|suggest|autocomplete|query|api)/i;
+        if (searchKeywords.test(url)) return false;
+
+        if (url.startsWith("/") || url.includes(host) || url.startsWith(location.origin)) return false;
+
+        return trackerRegex.test(url);
+    };
+
+    /* -- TELEMETRY NEUTRALIZATION -- */
+    (function () {
+
         const trackers = [
-            'ga', 'gaGlobal', 'GoogleAnalyticsObject', 'dataLayer', 'fbq',
-            '_gaq', '_gat', 'monitoring', 'newrelic', 'StackExchange',
-            'amplitude', 'mixpanel', 'intercom', 'hubspot'
+            "ga", "gaGlobal", "GoogleAnalyticsObject", "dataLayer", "fbq",
+            "_gaq", "_gat", "monitoring", "newrelic",
+            "amplitude", "mixpanel", "intercom", "hubspot"
         ];
+
         trackers.forEach(t => {
             if (window[t]) window[t] = undefined;
         });
-        if (navigator.sendBeacon) navigator.sendBeacon = () => true;
+
+        try {
+            navigator.sendBeacon = () => false;
+        } catch (e) {}
+
         console.clear = noop;
-    };
-    killTelemetry();
+    })();
 
-    const blockedKeywords = [
-        'google-analytics', 'googletagmanager', 'facebook.net', 'adservice',
-        'telemetry', 'analytics', 'doubleclick', 'hotjar', 'scorecardresearch',
-        'pixel', 'metrics', 'log-event', 'segment.io', 'amplitude.com',
-        'sentry.io', 'newrelic.com', 'crashlytics', 'mixpanel.com', 'stats.g.doubleclick.net',
-        'browser-update.org', 'cloudfront.net/ad', 'inspectlet.com', 'mouseflow.com'
-    ];
-
-    const shouldBlock = (url) => {
-        if (!url || typeof url !== 'string') return false;
-        if (url.startsWith('/') || url.includes(currentHost)) return false;
-
-        const lowUrl = url.toLowerCase();
-        return blockedKeywords.some(keyword => lowUrl.includes(keyword));
-    };
-
+    /* -- NETWORK INTERCEPTION -- */
     window.fetch = new Proxy(window.fetch, {
         apply(target, thisArg, args) {
-            const url = typeof args[0] === 'string' ? args[0] : args[0]?.url;
-            if (shouldBlock(url)) return Promise.reject(new Error('Blocked by PureRender'));
+
+            const url = typeof args[0] === "string" ? args[0] : args[0] ?.url;
+
+            if (isTrackerURL(url)) return Promise.resolve(new Response("", { status: 204}));
+
             return Reflect.apply(target, thisArg, args);
         }
     });
 
-    const nativeOpen = XMLHttpRequest.prototype.open;
+    const nativeXHR = XMLHttpRequest.prototype.open;
+
     XMLHttpRequest.prototype.open = function (method, url) {
-        if (shouldBlock(url)) {
+
+        if (isTrackerURL(url)) {
             this.send = noop;
             return;
         }
-        return nativeOpen.apply(this, arguments);
+
+        return nativeXHR.apply(this, arguments);
     };
 
-    if (!isExcludedHost) {
-        GM_addStyle(`
-            html, body {
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-                scroll-behavior: auto !important;
-            }
-            #preloader, .preloader, #loader, .loader, #loading, .loading,
-            [class*="spinner"], [id*="spinner"], .loading-overlay,
-            [class*="preloader-"], [id*="preloader-"],
-            .overlay-fixed, #overlay-fixed {
-                display: none !important;
-                opacity: 0 !important;
-                visibility: hidden !important;
-                pointer-events: none !important;
-            }
-        `);
+    /* -- SCRIPT FILTER -- */
+    document.addEventListener('beforescriptexecute', (e) => {
+        const script = e.target;
+        if (script.src && isTrackerURL(script.src)) {
+            e.preventDefault();
+            e.stopPropagation();
+            script.remove();
+        }
+    }, true);
 
-        const unlock = () => {
+    /* -- PERFORMANCE MITIGATIONS -- */
+
+    /* slow abusive intervals */
+    const nativeSetInterval = window.setInterval;
+
+    window.setInterval = function (fn, delay, ...args) {
+
+        if (delay && delay < 200) delay = 200;
+
+        return nativeSetInterval(fn, delay, ...args);
+    };
+
+    /* requestIdleCallback throttle */
+    try {
+        window.requestIdleCallback = fn => setTimeout(fn, 50);
+    } catch (e) {}
+
+    /* disable sendBeacon */
+    try {
+        navigator.sendBeacon = () => false;
+    } catch (e) {}
+
+    /* -- TRACKER DOM CLEANUP -- */
+    document.addEventListener("DOMContentLoaded", () => {
+
+        /* remove ping tracking */
+        document.querySelectorAll("a[ping]")
+            .forEach(a => a.removeAttribute("ping"));
+
+        /* remove external preconnect */
+        document.querySelectorAll(
+            'link[rel="preconnect"],link[rel="dns-prefetch"],link[rel="prefetch"]'
+        ).forEach(link => {
             try {
-                document.body.style.setProperty('overflow', 'auto', 'important');
-                document.body.style.setProperty('position', 'relative', 'important');
-                document.documentElement.style.setProperty('overflow', 'auto', 'important');
-                window.addEventListener('wheel', (e) => e.stopPropagation(), {
-                    capture: true
-                });
-                window.addEventListener('touchmove', (e) => e.stopPropagation(), {
-                    capture: true
-                });
+                const u = new URL(link.href);
+
+                if (u.hostname !== location.hostname) link.remove();
+
             } catch (e) {}
-        };
-
-        window.addEventListener('load', unlock, {
-            once: true
         });
-        setTimeout(unlock, 2000);
-    }
+    });
 
+    /* -- IFRAME TRACKER BLOCK -- */
+    const iframeObserver = new MutationObserver(mutations => {
+        for (const m of mutations) {
+            m.addedNodes.forEach(node => {
+                if (node.tagName === "IFRAME" && node.src) {
+                    try {
+                        const r = node.getBoundingClientRect();
+
+                        if (r.width <= 2 && r.height <= 2) node.remove();
+                    } catch (e) {}
+                }
+            });
+        }
+    });
+
+    iframeObserver.observe(document.documentElement, {
+        childList: true,
+        subtree: true
+    });
+
+    /* -- WINDOW.OPEN FILTER -- */
+    try {
+        const nativeOpen = window.open;
+
+        window.open = function (url, ...rest) {
+            if (url && trackerRegex.test(url)) return null;
+            return nativeOpen.call(this, url, ...rest);
+        };
+    } catch (e) {}
+
+    /* -- VISIBILITY TRACKING MITIGATION -- */
+    try {
+        document.addEventListener(
+            "visibilitychange",
+            e => e.stopImmediatePropagation(),
+            true
+        );
+
+    } catch (e) {}
+
+    /* -- UI ACCELERATION -- */
+    GM_addStyle(`
+        html,body{
+            display:block !important;
+            visibility:visible !important;
+            opacity:1 !important;
+            scroll-behavior:auto !important;
+        }
+
+        *{
+            scroll-behavior:auto !important;
+        }
+
+        #preloader,.preloader,#loader,.loader,#loading,.loading,[class*="spinner"],[id*="spinner"],.loading-overlay,[class*="preloader-"],[id*="preloader-"],.overlay-fixed,#overlay-fixed {
+            display:none !important;
+            opacity:0 !important;
+            visibility:hidden !important;
+            pointer-events:none !important;
+        }
+    `);
+
+    const unlock = () => {
+        try {
+
+            document.body.style.setProperty(
+                "overflow", "auto", "important");
+
+            document.documentElement.style.setProperty(
+                "overflow", "auto", "important");
+
+        } catch (e) {}
+    };
+
+    window.addEventListener("load", unlock, {
+        once: true
+    });
+    setTimeout(unlock, 2000);
+
+    /* -- MENU -- */
     GM_registerMenuCommand("🚫 Exclude this site", () => {
-        if (!userExcluded.includes(currentHost)) {
-            userExcluded.push(currentHost);
-            GM_setValue('excluded_sites', userExcluded);
+
+        if (!userExcluded.includes(host)) {
+            userExcluded.push(host);
+
+            GM_setValue("excluded_sites", userExcluded);
+
             location.reload();
         }
     });
 
-    GM_registerMenuCommand("🔄 Reset Exclusion List", () => {
-        GM_setValue('excluded_sites', []);
+    GM_registerMenuCommand("🔄 Reset exclusions", () => {
+        GM_setValue("excluded_sites", []);
+
         location.reload();
     });
 })();
