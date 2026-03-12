@@ -1,18 +1,41 @@
-## ⚡ PureRender
+## ⚡ PureRender: Instant-Web
 
-**Instantly load web pages by preventing web bloat.**
+**Instantly accelerate websites by removing trackers, render blockers, and artificial delays.**
 
-PureRender forces websites to display their content immediately by bypassing splash screens, loaders, and artificial delays. It also intercepts heavy telemetry scripts and tracking requests to save bandwidth and accelerate your navigation.
+PureRender speeds up page navigation by stripping away the invisible overhead that modern websites load in the background.
 
-### 🔌 Official Compatibility with PureYouTube
+Instead of waiting for splash screens, heavy loaders, analytics scripts, and delayed UI initialization, PureRender forces pages to render their content immediately.
 
-Since both scripts are part of my performance suite, PureRender is designed to stay out of YouTube's way. Its visual engine is automatically disabled on all YouTube domains to ensure zero conflicts and peak performance.
+It achieves this by:
 
-For the best experience, I highly recommend using **[PureYoutube](https://greasyfork.org/en/scripts/566055-pureyoutube)** as the dedicated companion for this script. While PureRender optimizes the general web, PureYouTube provides the cinematic and ultra-fast interface I built specifically for YouTube.
+• Blocking telemetry and tracking requests  
+• Neutralizing background CPU abuse (interval spam, idle callbacks)  
+• Removing render-blocking loaders and splash screens  
+• Preventing unnecessary prefetch, preconnect and tracking pings  
+• Filtering tracker scripts before they execute
 
-### ⚠️ Troubleshooting
+The result is a cleaner network pipeline, faster rendering, and significantly smoother browsing across most websites.
 
-If a website feels "over-optimized" or fails to load specific dynamic content:
-1. Click on the script manager icon (Tampermonkey/Violentmonkey).
-2. Select **"🚫 Exclude this site"**.
-3. The domain will be whitelisted, and its original behavior will be restored instantly.
+---
+
+## 🔌 Official Compatibility with PureYouTube
+
+Since both scripts are part of my performance suite, PureRender is designed to stay out of YouTube's way.
+
+All visual acceleration features are automatically disabled on YouTube domains to ensure zero conflicts and maximum compatibility.
+
+For the best experience, I recommend using:
+
+**[PureYouTube](https://greasyfork.org/en/scripts/566055-pureyoutube)**
+
+PureRender optimizes the general web, while PureYouTube provides the cinematic, ultra-fast interface built specifically for YouTube.
+
+---
+
+## ⚠️ Troubleshooting
+
+If a website appears "over-optimized" or fails to load certain dynamic elements:
+
+1. Click the script manager icon (Tampermonkey / Violentmonkey)
+2. Select **"🚫 Exclude this site"**
+3. The site will be instantly restored to its original behavior
