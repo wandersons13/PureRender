@@ -1,20 +1,25 @@
-## ⚡ PureRender: Instant-Web
+# ⚡ PureRender: Instant-Web
 
-**PureRender** significantly accelerates your browsing experience by eliminating background trackers, render blockers, and artificial delays, forcing pages to load faster. It streamlines web navigation by removing invisible overhead that modern websites typically load in the background. Instead of waiting for splash screens, slow loaders, analytics scripts, or delayed UI elements, **PureRender** prioritizes content rendering instantly.
+**PureRender** is a high-performance rendering engine designed to eliminate "visual friction" on the modern web.
 
-### Key Features:
+It focuses entirely on the browser's paint process, stripping away artificial delays and heavy decorative elements to deliver content to your screen as fast as possible.
 
-- **Block telemetry and tracking requests**: Prevents unwanted tracking data collection.
-- **Neutralize background CPU abuse**: Stops interval spam and idle callbacks that drain resources.
-- **Remove render-blocking elements**: Eliminates splash screens, heavy loaders, and other delays.
-- **Prevent unnecessary prefetch, preconnect, and tracking pings**: Reduces redundant network requests.
-- **Filter tracker scripts before execution**: Prevents analytics and tracking scripts from running.
-- **Block tracking parameters in URLs**: Automatically removes tracking tags like `utm_`, `ref_`, `gclid`, and `fbclid`.
-- **Block potential tracker and ad Iframes**: Ensures unwanted embedded content doesn't load.
+---
 
-### Result:
+### 🚀 Key Performance Boosts
 
-A cleaner network pipeline, faster rendering, and a significantly smoother browsing experience across most websites.
+- **Instant Visibility** 👁️ Forces the browser to display the page immediately, bypassing "white flashes" and hidden states used during script execution.
+- **Eliminate UI Junk** 🗑️ Automatically hides pre-loaders, spinners, skeletons, and splash screens that artificially gatekeep your access to content.
+- **Raw Navigation** ⚡ Disables "Smooth Scroll" for 1:1 input response and removes `backdrop-filter` (blur) effects that cause stuttering on high-resolution displays.
+- **Eager Resource Priority** 📥 Signals the browser to prioritize image downloads as soon as bandwidth is available, reducing "blank holes" while scrolling.
+- **GPU Relief** 📉 Strips heavy CSS shadows and complex filters to save GPU cycles, ensuring a fluid frame rate even on poorly optimized websites.
+- **Zero-Footprint Logic** ☁️ Built with high-performance CSS and passive JS listeners to ensure the script itself never adds overhead to your CPU.
+
+---
+
+### 🛠️ How it works
+
+PureRender acts as a **visual refiner**. Modern web design often uses "smoothness" and "loading animations" to mask slow performance. By stripping away these non-essential tasks, your browser can dedicate 100% of its energy to what matters: **rendering the data you actually want to see.**
 
 ---
 
@@ -30,10 +35,11 @@ PureRender optimizes the general web, while PureYouTube provides the cinematic, 
 
 ---
 
-## ⚠️ **Troubleshooting**
+### ⚠️ Troubleshooting & Exclusions
 
-If a website seems over-optimized or dynamic elements fail to load:
+If a specific website’s layout feels off or a dynamic modal fails to appear:
 
-1. Click the script manager icon (Tampermonkey / Violentmonkey).
-2. Select **"🚫 Exclude this site"**.
-3. The website will return to its original behavior instantly.
+- **To Exclude**: Click your script manager icon (Tampermonkey/Violentmonkey) and select **"🚫 Exclude this site"**.
+- **To Reset**: Use the **"🔄 Clear exclusion list"** command in the script menu to wipe all custom settings and start fresh.
+
+---
